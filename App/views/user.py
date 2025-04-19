@@ -13,6 +13,7 @@ from App.controllers import (
     createFile,
     getFile,
     deleteFile,
+    getData,
     createGraph
 )
 
@@ -94,28 +95,105 @@ def delete(file_id):
     flash('File successfully deleted')
     return render_template('index.html')
 
-@user_views.route('/generateGraph/<file_id>', methods=['POST'])
+@user_views.route('/generateGraph/<data_type>/<file_id>', methods=['GET', 'POST'])
 @jwt_required()
-def generateGraph(file_id):
+def generateGraph(file_id, data_type):
     userId = get_jwt_identity()
     user = get_user(userId)
-
     file = getFile(file_id)
-    graph = pd.read_csv(BytesIO(file.fileData))
-    mplot.figure()
-    graph.plot()
-    #mplot.show()
-    graphName = f"{file.name}Graph.png"
-    graphDir = os.path.join(current_app.root_path, 'static', 'graphs', graphName)
     
-    os.makedirs(graphDir, exist_ok=True)
+    if request.method == 'GET':
+        return render_template('chart.html', file_id=file_id)
+    if data_type == 'programme':
+        data = getData()
+        data_dicts = []
+        for d in data:
+            data_dicts.append({
+                'programme': d.programme,
+                'age': d.age,
+                'gradute': d.gradute,
+                'fauculty': d.fauculty
+            })
+        
+        df = pd.DataFrame(data_dicts)
+        chart_data = [
+            {
+                'id': str(programme),
+                'label': str(programme),
+                'value': int(count),
+                'color': f'hsl({abs(hash(str(programme))) % 360}, 70%, 50%)'
+            }
+            for programme, count in df['programme'].value_counts().items()
+        ]
+        return jsonify(chart_data)
+    elif data_type == 'age':
+        data = getData()
+        data_dicts = []
+        for d in data:
+            data_dicts.append({
+                'programme': d.programme,
+                'age': d.age,
+                'gradute': d.gradute,
+                'fauculty': d.fauculty
+            })
+        
+        df = pd.DataFrame(data_dicts)
+        chart_data = [
+            {
+                'id': str(age),
+                'label': str(age),
+                'value': int(count),
+                'color': f'hsl({abs(hash(str(age))) % 360}, 70%, 50%)'
+            }
+            for age, count in df['age'].value_counts().items()
+        ]
+        return jsonify(chart_data)
+    elif data_type == 'faculty':
+        data = getData()
+        data_dicts = []
+        for d in data:
+            data_dicts.append({
+                'programme': d.programme,
+                'age': d.age,
+                'gradute': d.gradute,
+                'fauculty': d.fauculty
+            })
+        df = pd.DataFrame(data_dicts)
+        chart_data = [
+            {
+                'id': str(fauculty),
+                'label': str(fauculty),
+                'value': int(count),
+                'color': f'hsl({abs(hash(str(fauculty))) % 360}, 70%, 50%)'
+            }
+            for fauculty, count in df['fauculty'].value_counts().items()
+        ]
+        return jsonify(chart_data)
+    elif data_type == 'graduate':
+        data = getData()
+        data_dicts = []
+        for d in data:
+            data_dicts.append({
+                'programme': d.programme,
+                'age': d.age,
+                'gradute': d.gradute,
+                'fauculty': d.fauculty
+            })
+        df = pd.DataFrame(data_dicts)
+        chart_data = [
+            {
+                'id': str(graduate),
+                'label': str(graduate),
+                'value': int(count),
+                'color': f'hsl({abs(hash(str(graduate))) % 360}, 70%, 50%)'
+            }
+            for graduate, count in df['gradute'].value_counts().items()
+        ]
+        return jsonify(chart_data)
+    else:
+        return jsonify({'error': 'Invalid data type'}), 400
+
     
-    graphPath = os.path.join(graphDir, graphName)
-    mplot.savefig(graphDir)
-    mplot.close()
-    createGraph(name=graphName, data=graphPath.read(), userId=user.id)
-    flash('Graph created')
-    return render_template('index.html')
 
 @user_views.route('/test', methods=['GET', 'POST', 'PUT', 'DELETE'])
 def test_route():
